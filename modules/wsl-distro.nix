@@ -120,6 +120,11 @@ in
                 done
               ''
             );
+            umountTmpX11 = ''
+              # this will be created again rw by systemd.tmpfiles.rules
+              echo "unmounting tmpfs at /tmp/.X11-unix..."
+              umount /tmp/.X11-unix/ || true
+            '';
             populateBin = lib.mkIf cfg.populateBin (stringAfter [ ] ''
               echo "setting up /bin..."
               ln -sf /init /bin/wslpath
@@ -149,7 +154,10 @@ in
 
             # Link the X11 socket into place. This is a no-op on a normal setup,
             # but helps if /tmp is a tmpfs or mounted from some other location.
-            tmpfiles.rules = [ "L /tmp/.X11-unix - - - - ${cfg.wslConf.automount.root}/wslg/.X11-unix" ];
+            tmpfiles.rules = [
+              "d /tmp/.X11-unix 1777 root root -"
+              "L /tmp/.X11-unix/X0 - - - - ${cfg.wslConf.automount.root}/wslg/.X11-unix/X0"
+            ];
           };
 
           # Start a systemd user session when starting a command through runuser
